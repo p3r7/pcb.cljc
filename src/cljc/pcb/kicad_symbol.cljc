@@ -1,5 +1,7 @@
 (ns pcb.kicad-symbol)
 
+(declare parse)
+
 
 ;; SPEC
 
@@ -18,13 +20,22 @@
   (let [[_kind label & rest] symbol
         props (filter #(= (first %) 'property) rest)]
     {:label label
-     :props (map parse-symbol-prop props)}))
+     :props (map parse props)}))
+
+(defn parse-symbol-lib [o]
+  (let [[_kind & symbols] o]
+    {:version (parse (some #(when (= (first %) 'version) %) symbols))
+     :generator (parse (some #(when (= (first %) 'generator) %) symbols))
+     :symbols (map parse symbols)}))
 
 (defn parse [o]
-  (let [[_kind [_ version] [_ generator] & symbols] o]
-    {:version version
-     :generator generator
-     :symbols (map parse-symbol symbols)}))
+  (case (first o)
+    kicad_symbol_lib (parse-symbol-lib o)
+    symbol (parse-symbol o)
+    property (parse-symbol-prop o)
+    (version generator) (second o)
+    nil)
+  )
 
 (defn parse-at-filepath [fp]
   (->> (clojure.core/slurp fp)
