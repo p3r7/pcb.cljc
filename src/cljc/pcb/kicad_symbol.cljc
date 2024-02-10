@@ -24,10 +24,18 @@
   (and (type? o 'property)
        (kicad-symbol-prop-name? (second o))))
 
+(defn parse-kicad-symbol-prop [p]
+  (let [[_kind k v] p
+        v (case k
+            ("ki_keywords" "ki_fp_filters") (string/split v #" ")
+            v)]
+    [k v]
+    ))
+
 (defn parse-symbol-prop [p]
   (let [[_kind k v [_at x y z]] p]
     (if (kicad-symbol-prop-name? k)
-      [k v]
+      (parse-kicad-symbol-prop p)
       ;; regular prop
       {:k k
        :v v
@@ -42,9 +50,12 @@
      :ki_props (into {} (map parse kicad-props))}))
 
 (defn parse-symbol-lib [o]
-  (let [[_kind & symbols] o]
-    {:version (parse (some #(when (type? % 'version) %) symbols))
-     :generator (parse (some #(when (type? % 'generator) %) symbols))
+  (let [[_kind & props] o
+        version (some #(when (type? % 'version) %) props)
+        generator (some #(when (type? % 'generator) %) props)
+        symbols (filter #(type? % 'symbol) props)]
+    {:version (parse version)
+     :generator (parse generator)
      :symbols (map parse symbols)}))
 
 (defn parse [[kind :as o]]
