@@ -1,17 +1,21 @@
 (ns pcb.kicad-symbol
-  (:require [clojure.string :as string]))
+  (:require
+   [clojure.string :as string]
+   [pcb.utils.core :refer [keep-first]]))
 
 (declare parse)
-
-
-;; SPEC
-
 
 
 ;; PARSING
 
 (defn type? [o t]
   (= (first o) t))
+
+(defn parse-pin [[_kind dir footprint & rest :as o]]
+  {:direction dir
+   :footprint footprint
+   :name (second (keep-first #(type? % 'name) rest))
+   :number (second (keep-first #(type? % 'number) rest))})
 
 (defn kicad-symbol-prop-name? [s]
   (string/starts-with? s "ki_"))
@@ -44,15 +48,19 @@
 (defn parse-symbol [symbol]
   (let [[_kind label & rest] symbol
         props (filter regular-symbol-prop? rest)
-        kicad-props (filter kicad-symbol-prop? rest)]
+        kicad-props (filter kicad-symbol-prop? rest)
+        pins (filter #(type? % 'pin) rest)
+        sub-symbols (filter #(type? % 'symbol) rest)]
     {:label label
      :props (map parse props)
-     :ki_props (into {} (map parse kicad-props))}))
+     :ki_props (into {} (map parse kicad-props))
+     :sub-symbols (map parse sub-symbols)
+     :pins (map parse pins)}))
 
 (defn parse-symbol-lib [o]
   (let [[_kind & props] o
-        version (some #(when (type? % 'version) %) props)
-        generator (some #(when (type? % 'generator) %) props)
+        version (keep-first #(type? % 'version) props)
+        generator (keep-first #(type? % 'generator)props)
         symbols (filter #(type? % 'symbol) props)]
     {:version (parse version)
      :generator (parse generator)
@@ -63,6 +71,7 @@
     kicad_symbol_lib (parse-symbol-lib o)
     symbol (parse-symbol o)
     property (parse-symbol-prop o)
+    pin (parse-pin o)
     (version generator) (second o)
     nil))
 
