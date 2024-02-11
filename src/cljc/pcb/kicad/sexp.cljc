@@ -1,7 +1,7 @@
 (ns pcb.kicad.sexp
   (:require
    [clojure.string :as string]
-   [pcb.utils.core :refer [keep-first remove-empty]]))
+   [pcb.utils.core :refer [keep-first remove-empty parseInt]]))
 
 (declare parse
          ;; symbol
@@ -16,7 +16,10 @@
 ;; PARSING - GENERIC
 
 (defn type? [o t]
-  (= (first o) t))
+  (if (symbol? o)
+    ;; (prn (str "Calling `type?` on ") o)
+    false
+    (= (first o) t)))
 
 (defn parse [[kind :as o] & {:keys [file-path]}]
   (case kind
@@ -116,7 +119,9 @@
 ;; SYMBOL - LOOKUP & PRN
 
 (defn symbol-pins [symbol]
-  (apply concat (:pins symbol) (symbol-pins :sub-symbols)))
+  (let [sub-symbol-pins (mapcat symbol-pins (:sub-symbols symbol))
+        pins (concat (:pins symbol) sub-symbol-pins)]
+    (sort-by #(parseInt (:number %)) pins)))
 
 (defn prn-symbol [symbol]
   (println (:label symbol))
@@ -124,5 +129,9 @@
     (println (:v datasheet-prop)))
   (when-let [tags (get-in symbol [:ki_props "ki_keywords"])]
     (println (str "Tags: " (string/join ", " tags))))
-  ;; (prn (symbol-pins symbol))
-  )
+  (when-let [pins (symbol-pins symbol)]
+    (println (str (count pins) " Pins:"))
+    (doall
+     (map
+      #(println (str " - " (:number %) " " (:name %)))
+      pins))))

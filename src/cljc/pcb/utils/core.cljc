@@ -1,6 +1,14 @@
 (ns pcb.utils.core)
 
 
+;; STRINGS
+
+(defn parseInt [s]
+  #?(:clj (Integer/parseInt s))
+  #?(:cljs (js/parseInt s)))
+
+
+
 ;; COLLECTIONS - GENERIC
 
 (defn maintain
@@ -114,7 +122,6 @@
   (remove-vals-in-coll coll nil?))
 
 (defn remove-empty [coll]
-  coll
-  ;; (remove-vals-in-coll coll #(and (coll? %)
-  ;;                                 (empty? %)))
-  )
+  ;; coll
+  (remove-vals-in-coll coll #(and (coll? %)
+                                  (empty? %))))
