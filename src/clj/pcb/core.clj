@@ -2,7 +2,7 @@
   (:gen-class)
   (:require
    [pcb.component :as component]
-   [pcb.kicad-symbol :as kicad-symbol]))
+   [pcb.kicad.sexp :as kicad-sexp]))
 
 
 
@@ -38,7 +38,7 @@
                    :label "GND"
                    }]}
 
-        kicad-symbol-libs (map #(kicad-symbol/parse-at-filepath (.getAbsolutePath %)) kicad-symbol-files)
+        kicad-symbol-libs (map #(kicad-sexp/parse-at-filepath (.getAbsolutePath %)) kicad-symbol-files)
         kicad-symbols (apply concat (map #(:symbols %) kicad-symbol-libs))
         ]
     (when (component/instanceof? c :strict true :verbose true)
@@ -50,7 +50,7 @@
     ;; (prn
     ;;  (->> (first kicad-symbol-files)
     ;;       .getAbsolutePath
-    ;;       kicad-symbol/parse-at-filepath))
+    ;;       kicad-sexp/parse-at-filepath))
 
     (prn (some #(when (= (:label %) "LM13700") %) kicad-symbols))
     ;; (prn (first kicad-symbol-libs))
