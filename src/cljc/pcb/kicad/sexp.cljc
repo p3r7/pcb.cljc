@@ -1,7 +1,7 @@
 (ns pcb.kicad.sexp
   (:require
    [clojure.string :as string]
-   [pcb.utils.core :refer [keep-first]]))
+   [pcb.utils.core :refer [keep-first remove-empty]]))
 
 (declare parse
          ;; symbol
@@ -57,11 +57,11 @@
         version (keep-first #(type? % 'version) props)
         generator (keep-first #(type? % 'generator)props)
         symbols (filter #(type? % 'symbol) props)]
-    {
-     :location file-path
-     :version (parse version)
-     :generator (parse generator)
-     :symbols (map parse symbols)}))
+    (remove-empty
+     {:location file-path
+      :version (parse version)
+      :generator (parse generator)
+      :symbols (map parse symbols)})))
 
 (defn parse-symbol [symbol]
   (let [[_kind label & rest] symbol
@@ -69,11 +69,12 @@
         kicad-props (filter kicad-symbol-prop? rest)
         pins (filter #(type? % 'pin) rest)
         sub-symbols (filter #(type? % 'symbol) rest)]
-    {:label label
-     :props (map parse props)
-     :ki_props (into {} (map parse kicad-props))
-     :sub-symbols (map parse sub-symbols)
-     :pins (map parse pins)}))
+    (remove-empty
+     {:label label
+      :props (map parse props)
+      :ki_props (into {} (map parse kicad-props))
+      :sub-symbols (map parse sub-symbols)
+      :pins (map parse pins)})))
 
 (defn parse-symbol-prop [p]
   (let [[_kind k v [_at x y z]] p]
@@ -92,10 +93,11 @@
     [k v]))
 
 (defn parse-pin [[_kind dir footprint & rest :as o]]
-  {:direction dir
-   :footprint footprint
-   :name (second (keep-first #(type? % 'name) rest))
-   :number (second (keep-first #(type? % 'number) rest))})
+  (remove-empty
+   {:direction dir
+    :footprint footprint
+    :name (second (keep-first #(type? % 'name) rest))
+    :number (second (keep-first #(type? % 'number) rest))}))
 
 
 
@@ -108,3 +110,19 @@
 
 (defn symbol-libs->symbols [symbol-libs]
   (apply concat (map symbol-lib->symbols symbol-libs)))
+
+
+
+;; SYMBOL - LOOKUP & PRN
+
+(defn symbol-pins [symbol]
+  (apply concat (:pins symbol) (symbol-pins :sub-symbols)))
+
+(defn prn-symbol [symbol]
+  (println (:label symbol))
+  (when-let [datasheet-prop (keep-first #(= (:k %) "Datasheet") (:props symbol))]
+    (println (:v datasheet-prop)))
+  (when-let [tags (get-in symbol [:ki_props "ki_keywords"])]
+    (println (str "Tags: " (string/join ", " tags))))
+  ;; (prn (symbol-pins symbol))
+  )

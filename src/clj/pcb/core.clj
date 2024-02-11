@@ -1,6 +1,7 @@
 (ns pcb.core
   (:gen-class)
   (:require
+   [pcb.utils.core :refer [keep-first]]
    [pcb.component :as component]
    [pcb.kicad.sexp :as kicad-sexp]))
 
@@ -44,6 +45,8 @@
       (println "Valid component!")
       )
 
-    (prn (some #(when (= (:label %) "LM13700") %) kicad-symbols))
+    (let [LM13700 (keep-first #(= (:label %) "LM13700") kicad-symbols)]
+      (kicad-sexp/prn-symbol LM13700)
+      (prn LM13700))
     )
   )
