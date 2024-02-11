@@ -39,20 +39,11 @@
                    }]}
 
         kicad-symbol-libs (map #(kicad-sexp/parse-at-filepath (.getAbsolutePath %)) kicad-symbol-files)
-        kicad-symbols (apply concat (map #(:symbols %) kicad-symbol-libs))
-        ]
+        kicad-symbols (kicad-sexp/symbol-libs->symbols kicad-symbol-libs)]
     (when (component/instanceof? c :strict true :verbose true)
       (println "Valid component!")
       )
 
-    ;; (prn (map #(.getAbsolutePath %) (take 10 kicad-symbol-files)))
-
-    ;; (prn
-    ;;  (->> (first kicad-symbol-files)
-    ;;       .getAbsolutePath
-    ;;       kicad-sexp/parse-at-filepath))
-
     (prn (some #(when (= (:label %) "LM13700") %) kicad-symbols))
-    ;; (prn (first kicad-symbol-libs))
     )
   )

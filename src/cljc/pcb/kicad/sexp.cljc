@@ -18,9 +18,9 @@
 (defn type? [o t]
   (= (first o) t))
 
-(defn parse [[kind :as o]]
+(defn parse [[kind :as o] & {:keys [file-path]}]
   (case kind
-    kicad_symbol_lib (parse-symbol-lib o)
+    kicad_symbol_lib (parse-symbol-lib o file-path)
     symbol (parse-symbol o)
     property (parse-symbol-prop o)
     pin (parse-pin o)
@@ -28,9 +28,9 @@
     nil))
 
 (defn parse-at-filepath [fp]
-  (->> (clojure.core/slurp fp)
-       clojure.edn/read-string
-       parse))
+  (-> (clojure.core/slurp fp)
+      clojure.edn/read-string
+      (parse :file-path fp)))
 
 
 
@@ -52,12 +52,14 @@
 
 ;; SYMBOL - PARSING
 
-(defn parse-symbol-lib [o]
+(defn parse-symbol-lib [o file-path]
   (let [[_kind & props] o
         version (keep-first #(type? % 'version) props)
         generator (keep-first #(type? % 'generator)props)
         symbols (filter #(type? % 'symbol) props)]
-    {:version (parse version)
+    {
+     :location file-path
+     :version (parse version)
      :generator (parse generator)
      :symbols (map parse symbols)}))
 
@@ -94,3 +96,15 @@
    :footprint footprint
    :name (second (keep-first #(type? % 'name) rest))
    :number (second (keep-first #(type? % 'number) rest))})
+
+
+
+;; SYMBOL - CONVERSION
+
+(defn symbol-lib->symbols [symbol-lib]
+  (let [location (:location symbol-lib)
+        symbols (:symbols symbol-lib)]
+    (map #(assoc % :lib location) symbols)))
+
+(defn symbol-libs->symbols [symbol-libs]
+  (apply concat (map symbol-lib->symbols symbol-libs)))
