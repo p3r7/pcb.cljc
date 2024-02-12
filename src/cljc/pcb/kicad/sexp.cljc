@@ -22,12 +22,12 @@
     (= (first o) t)))
 
 (defn parse [[kind :as o] & {:keys [file-path]}]
-  (case kind
-    kicad_symbol_lib (parse-symbol-lib o file-path)
-    symbol (parse-symbol o)
-    property (parse-symbol-prop o)
-    pin (parse-pin o)
-    (version generator) (second o)
+  (case (keyword kind)
+    :kicad_symbol_lib (parse-symbol-lib o file-path)
+    :symbol (parse-symbol o)
+    :property (parse-symbol-prop o)
+    :pin (parse-pin o)
+    (:version :generator) (second o)
     nil))
 
 (defn parse-at-filepath [fp]
